@@ -1,4 +1,5 @@
 import django_filters.rest_framework as filters
+from rest_framework.filters import OrderingFilter
 from rest_framework import viewsets, mixins
 from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView, UpdateAPIView, DestroyAPIView
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
@@ -63,8 +64,9 @@ from .serializers import (ProductListSerializer,
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductDetailsSerializer
-    filter_backends = (filters.DjangoFilterBackend, )
+    filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
     filterset_class = ProductFilter
+    ordering_fields = ['title', 'price']
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -134,8 +136,6 @@ class OrderViewSet(viewsets.ModelViewSet):
 # 9. Редактировать заказы может только админ
 
 #TODO: Фильтрация по заказам
-#TODO: Пагинация
-#TODO: Сортировка
 #TODO: Тесты
 #TODO: Документация
 

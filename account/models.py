@@ -1,4 +1,5 @@
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
+from django.core.mail import send_mail
 from django.db import models
 
 
@@ -8,7 +9,7 @@ class UserManager(BaseUserManager):
         if not email:
             raise ValueError('Email is required')
         email = self.normalize_email(email)
-        user = self.model(email=email,  **extra_fields)
+        user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save()
         return user
@@ -51,4 +52,11 @@ class User(AbstractBaseUser):
     def has_perm(self, perm, obj=None):
         return self.is_staff
 
-
+    @staticmethod
+    def send_activation_mail(email, activation_code):
+        message = f"Thank you for registration. Activation code for your account: {activation_code}"
+        send_mail("Account activation",
+                  message,
+                  'test@gmail.com',
+                  [email, ]
+                  )
