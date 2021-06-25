@@ -1,11 +1,14 @@
+from django.db.models import Avg
 import django_filters.rest_framework as filters
+from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework import viewsets, mixins
 from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView, UpdateAPIView, DestroyAPIView
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.response import Response
 
 from .filters import ProductFilter
-from .models import Product, Review, Order
+from .models import Product, Review, Order, WishList
 from .permissions import IsAuthororAdminPermission, DenyAll
 from .serializers import (ProductListSerializer,
                           ProductDetailsSerializer, ReviewSerializer, OrderSerializer)
@@ -68,6 +71,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     filterset_class = ProductFilter
     ordering_fields = ['title', 'price']
 
+
     def get_serializer_class(self):
         if self.action == 'list':
             return ProductListSerializer
@@ -76,7 +80,37 @@ class ProductViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAdminUser()]
+        elif self.action == 'create_review':
+            return [IsAuthenticated()]
         return []
+
+    # api/v1/products/id/create_review/
+    @action(detail=True, methods=['POST'])
+    def create_review(self, request, pk):
+        data = request.data.copy()
+        data['product'] = pk
+        serializer = ReviewSerializer(data=data, context={'request': request})
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        else:
+            return Response(serializer.errors, status=400)
+
+    @action(detail=True, methods=['POST'])
+    def like(self, request, pk):
+        product = self.get_object()
+        user = request.user
+        like_obj, created = WishList.objects.get_or_create(product=product, user=user)
+
+        if like_obj.is_liked:
+            like_obj.is_liked = False
+            like_obj.save()
+            return Response('disliked')
+        else:
+            like_obj.is_liked = True
+            like_obj.save()
+            return Response('liked')
 
 
 # 4. Создание отзывов, доступно только залогиненным пользователям

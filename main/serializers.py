@@ -1,5 +1,8 @@
 from rest_framework import serializers
 from .models import Product, Review, OrderItems, Order
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class ProductListSerializer(serializers.ModelSerializer):
@@ -13,9 +16,29 @@ class ProductDetailsSerializer(serializers.ModelSerializer):
         model = Product
         fields = '__all__'
 
+    def get_rating(self, instance):
+        total_rating = sum(instance.reviews.values_list('rating', flat=True))
+        reviews_count = instance.reviews.count()
+        rating = total_rating / reviews_count if reviews_count > 0 else 0
+        return round(rating, 1)
+
+
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         representation['reviews'] = ReviewSerializer(instance.reviews.all(), many=True).data
+        representation['rating'] = self.get_rating(instance)
+        return representation
+
+
+class ReviewAuthorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('first_name', 'last_name')
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if not instance.first_name and not instance.last_name:
+            representation['full_name'] = 'Anonymous User'
         return representation
 
 
@@ -30,7 +53,6 @@ class ReviewSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('You cannot add second review to this product')
         return product
 
-
     def validate_rating(self, rating):
         if not rating in range(1, 6):
             raise serializers.ValidationError('Rating must be from 1 to 5')
@@ -40,6 +62,11 @@ class ReviewSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         attrs['author'] = request.user
         return attrs
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['author'] = ReviewAuthorSerializer(instance.author).data
+        return rep
 
 
 class OrderItemsSerializer(serializers.ModelSerializer):
