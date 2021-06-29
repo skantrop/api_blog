@@ -22,7 +22,6 @@ class ProductDetailsSerializer(serializers.ModelSerializer):
         rating = total_rating / reviews_count if reviews_count > 0 else 0
         return round(rating, 1)
 
-
     def to_representation(self, instance):
         representation = super().to_representation(instance)
         representation['reviews'] = ReviewSerializer(instance.reviews.all(), many=True).data
@@ -97,3 +96,16 @@ class OrderSerializer(serializers.ModelSerializer):
         order.save()
         return order
 
+
+
+
+
+# class RecommendSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Product
+#         fields = ('title', 'description', 'category', )
+#
+#
+# class NewsSerializer(serializers.Serializer):
+#     title = serializers.CharField(max_length=255)
+#     description = serializers.CharField(max_length=500)

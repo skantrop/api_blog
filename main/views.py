@@ -7,7 +7,7 @@ from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView,
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
-from .filters import ProductFilter
+from .filters import ProductFilter, OrderFilter
 from .models import Product, Review, Order, WishList
 from .permissions import IsAuthororAdminPermission, DenyAll
 from .serializers import (ProductListSerializer,
@@ -80,7 +80,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAdminUser()]
-        elif self.action == 'create_review':
+        elif self.action in ['create_review', 'like']:
             return [IsAuthenticated()]
         return []
 
@@ -138,6 +138,9 @@ class ReviewViewSet(mixins.CreateModelMixin,
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
+    filterset_class = OrderFilter
+    ordering_fields = ['total_sum', 'created_at']
 
     def get_permissions(self):
         if self.action in ['create', 'list', 'retrieve']:
@@ -169,7 +172,6 @@ class OrderViewSet(viewsets.ModelViewSet):
 # 8. Список заказов: пользователь видит только свои заказы, админы видят все
 # 9. Редактировать заказы может только админ
 
-#TODO: Фильтрация по заказам
 #TODO: Тесты
 #TODO: Документация
 

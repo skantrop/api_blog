@@ -81,3 +81,4 @@ class WishList(models.Model):
                                 on_delete=models.CASCADE)
 
     is_liked = models.BooleanField(default=False)
+
